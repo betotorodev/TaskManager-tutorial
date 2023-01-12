@@ -70,6 +70,7 @@ extension Calendar {
 
 struct Home: View {
   @State private var currentDay: Date = .init()
+  @State private var task: [Task] = sampleTask
   
   /// header view
   @ViewBuilder
@@ -151,29 +152,78 @@ struct Home: View {
   // timeline View
   @ViewBuilder
   func TimelineView() -> some View {
-    VStack {
+    ScrollViewReader { proxy in
       let hours = Calendar.current.hours
-      ForEach(hours, id: \.self) { hour in
-        TimelineRowView(hour)
+      let midHour = hours[hours.count / 2]
+      VStack {
+        ForEach(hours, id: \.self) { hour in
+          TimelineRowView(hour)
+            .id(hour)
+        }
+      }
+      .onAppear {
+        proxy.scrollTo(midHour)
       }
     }
   }
   
   // timeline View row
   @ViewBuilder
-  func TimelineRowView(_ hour: Date) -> some View {
+  func TimelineRowView(_ date: Date) -> some View {
     HStack(alignment: .top) {
-      Text(hour.toString("h a"))
+      Text(date.toString("h a"))
         .font(.caption)
         .frame(width: 45, alignment: .leading)
       
-      Rectangle()
-        .stroke(.gray.opacity(0.5), style: StrokeStyle(lineWidth: 0.5, lineCap: .butt, lineJoin: .bevel, dash: [5], dashPhase: 5))
-        .frame(height: 0.5)
-        .offset(y: 10)
+      // filtering data
+      let calendar = Calendar.current
+      let filteredTask = task.filter {
+        if let hour = calendar.dateComponents([.hour], from: date).hour,
+           let taskHour = calendar.dateComponents([.hour], from: $0.dateAdded).hour,
+           hour == taskHour && calendar.isDate($0.dateAdded, inSameDayAs: currentDay) {
+          return true
+        }
+        return false
+      }
+      
+      if filteredTask.isEmpty {
+        Rectangle()
+          .stroke(.gray.opacity(0.5), style: StrokeStyle(lineWidth: 0.5, lineCap: .butt, lineJoin: .bevel, dash: [5], dashPhase: 5))
+          .frame(height: 0.5)
+          .offset(y: 10)
+      } else {
+        VStack {
+          ForEach(filteredTask) { task in
+            
+            TaskRow(task)
+          }
+        }
+      }
     }
     .hAlign(.leading)
     .padding(.vertical, 15)
+  }
+  
+  // task view
+  @ViewBuilder
+  func TaskRow(_ task: Task) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Text(task.taskName.uppercased())
+        .font(.subheadline)
+        .foregroundColor(task.taskCatgory.color)
+    }
+    .hAlign(.leading)
+    .padding(12)
+    .background {
+      ZStack(alignment: .leading) {
+        Rectangle()
+          .fill(task.taskCatgory.color)
+          .frame(width: 4)
+        
+        Rectangle()
+          .fill(task.taskCatgory.color.opacity(0.25))
+      }
+    }
   }
   
   var body: some View {

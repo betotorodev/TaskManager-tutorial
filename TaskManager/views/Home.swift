@@ -71,6 +71,7 @@ extension Calendar {
 struct Home: View {
   @State private var currentDay: Date = .init()
   @State private var task: [Task] = sampleTask
+  @State private var addNewTask: Bool = false
   
   /// header view
   @ViewBuilder
@@ -87,7 +88,7 @@ struct Home: View {
         .hAlign(.leading)
         
         Button {
-          
+          addNewTask.toggle()
         } label: {
           HStack(spacing: 10) {
             Image(systemName: "plus")
@@ -233,6 +234,9 @@ struct Home: View {
     }
     .safeAreaInset(edge: .top, spacing: 0) {
       HeaderView()
+    }
+    .fullScreenCover(isPresented: $addNewTask) {
+      
     }
   }
 }
